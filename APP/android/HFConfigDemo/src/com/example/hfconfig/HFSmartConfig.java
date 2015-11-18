@@ -274,14 +274,16 @@ public class HFSmartConfig extends Activity {
 		String ipStr = mApplicationUtil.getIpStr();
 		String portStr = mApplicationUtil.getPortStr();
 		boolean isInfoNil = isConfigInfosNil(modeNum, ipStr, portStr);
-		/*
-		 * if (isInfoNil) {// ¿Õ result = getPasswdWithEdit(passwdText); return
-		 * result; } else {// ·Ç¿Õ result = theHexSendStr(modeNum, ipStr,
-		 * portStr); return result; }
-		 */
-		result = theHexSendStr(modeNum, ipStr, portStr) + "-"
-				+ getPasswdWithEdit(passwdText) + "";
-		return result;
+
+		if (isInfoNil) {// ¿Õ
+			result = getPasswdWithEdit(passwdText);
+			return result;
+		} else {// ·Ç¿Õ
+			// result = theHexSendStr(modeNum, ipStr, portStr);
+			result = theHexSendStr(modeNum, ipStr, portStr) + "-"
+					+ getPasswdWithEdit(passwdText) + "";
+			return result;
+		}
 	}
 
 	private boolean isConfigInfosNil(int modeNum, String ipStr, String portStr) {
