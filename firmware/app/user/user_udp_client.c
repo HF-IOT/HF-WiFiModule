@@ -23,13 +23,12 @@
 struct espconn udp_client_conn;
 
 extern struct esp_platform_saved_param esp_param;
-#define ESP_DBG os_printf
+#define ESP_DBG //os_printf
 
 LOCAL void udp_client_recv_callback(void *arg, char *pdata, unsigned short len)
 {
-	struct espconn *pespconn = arg;
-    ESP_DBG("user_udp_client_connect_cb\n");
-	user_uart_send(pdata,len);
+	struct espconn * pespconn = arg;
+	uart0_tx_buffer(pdata,len);
 }
 
 
@@ -48,7 +47,7 @@ void ICACHE_FLASH_ATTR user_udp_sent_data(char * buf,unsigned int len)
 
 void ICACHE_FLASH_ATTR user_udp_client_init(void)
 {
-	os_printf("user_tcp_client_init\r\n");
+	//os_printf("user_tcp_client_init\r\n");
     udp_client_conn.type = ESPCONN_UDP;
 	udp_client_conn.proto.udp = (esp_udp *)os_zalloc(sizeof(esp_udp));
     udp_client_conn.state = ESPCONN_NONE;

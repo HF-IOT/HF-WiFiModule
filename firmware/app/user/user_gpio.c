@@ -112,6 +112,7 @@ void ICACHE_FLASH_ATTR user_gpio_init(void)
 	user_gpio_output(13,1);
 	user_gpio_output(14,1);
 	user_gpio_output(15,1);
+	GPIO_DIS_OUTPUT(4);			//GPIO4 INPUT
 	user_network_unready();
 	user_is_restore_set();
 }

@@ -24,6 +24,7 @@
 #include "user_gpio.h"
 #include "user_tcp_client.h"
 #include "user_udp_client.h"
+#include "driver/uart.h"
 
 #if ESP_PLATFORM
 
@@ -94,6 +95,9 @@ LOCAL uint8 device_recon_count = 0;
 LOCAL uint32 active_nonce = 0;
 LOCAL uint8 iot_version[20] = {0};
 struct rst_info rtc_info;
+
+
+#define M_MAX_RECONN_COUNT 5*60
 void user_esp_platform_check_ip(uint8 reset_flag);
 
 /******************************************************************************
@@ -330,7 +334,7 @@ user_esp_platform_set_info(struct espconn *pconn, uint8 *pbuffer)
                     os_memcpy(recvbuf, pstr, length);
                     data = atoi(recvbuf);
                     rr=data;
-                    os_printf("r: %d\r\n",rr);
+                    //ESP_DBG("r: %d\r\n",rr);
                     //user_light_set_duty(data, 0);
                 }
             }
@@ -347,7 +351,7 @@ user_esp_platform_set_info(struct espconn *pconn, uint8 *pbuffer)
                     os_memcpy(recvbuf, pstr, length);
                     data = atoi(recvbuf);
                     gg=data;
-                    os_printf("g: %d\r\n",gg);
+                    //ESP_DBG("g: %d\r\n",gg);
                     //user_light_set_duty(data, 1);
                 }
             }
@@ -364,7 +368,7 @@ user_esp_platform_set_info(struct espconn *pconn, uint8 *pbuffer)
                     os_memcpy(recvbuf, pstr, length);
                     data = atoi(recvbuf);
                     bb=data;
-                    os_printf("b: %d\r\n",bb);
+                    //ESP_DBG("b: %d\r\n",bb);
                     //user_light_set_duty(data, 2);
                 }
             }
@@ -382,8 +386,8 @@ user_esp_platform_set_info(struct espconn *pconn, uint8 *pbuffer)
                     data = atoi(recvbuf);
                     cw=data;
 		      ww=data;
-                    os_printf("cw: %d\r\n",cw);
-		      os_printf("ww:%d\r\n",ww);   //chg
+                    //ESP_DBG("cw: %d\r\n",cw);
+		      //ESP_DBG("ww:%d\r\n",ww);   //chg
                     //user_light_set_duty(data, 2);
                 }
             }
@@ -399,7 +403,7 @@ user_esp_platform_set_info(struct espconn *pconn, uint8 *pbuffer)
         
     }else{
         if(light_sleep_flg==1){
-            os_printf("modem sleep en\r\n");
+            //ESP_DBG("modem sleep en\r\n");
             wifi_set_sleep_type(MODEM_SLEEP_T);
             light_sleep_flg =0;
         }
@@ -926,6 +930,13 @@ user_esp_platform_ap_change(void)
     os_timer_disarm(&client_timer);
     os_timer_setfn(&client_timer, (os_timer_func_t *)user_esp_platform_check_ip, NULL);
     os_timer_arm(&client_timer, 100, 0);
+	/******/
+	static unsigned int m_reconnect_count = 0;
+	m_reconnect_count++;
+	if (m_reconnect_count > M_MAX_RECONN_COUNT){
+		system_restart();
+	}
+	/******/
 }
 #endif
 
@@ -1113,7 +1124,7 @@ void ICACHE_FLASH_ATTR user_esp_platform_check_ip(uint8 reset_flag)
     struct ip_info ipconfig;
 
     os_timer_disarm(&client_timer);
-
+#if 1
     wifi_get_ip_info(STATION_IF, &ipconfig);
 
     if (wifi_station_get_connect_status() == STATION_GOT_IP && ipconfig.ip.addr != 0) {
@@ -1147,11 +1158,11 @@ void ICACHE_FLASH_ATTR user_esp_platform_check_ip(uint8 reset_flag)
         espconn_regist_reconcb(&user_conn, user_esp_platform_recon_cb);
         user_esp_platform_connect(&user_conn);
 #endif
-		// get ip init function
-		user_devicefind_init();
-		user_webserver_init(SERVER_PORT);
-		//TEST
-		//user_tcp_client_init();
+		// get ip init function		
+		if (esp_param.wifiwork_mode == 3){
+			user_devicefind_init();
+			user_webserver_init(SERVER_PORT);
+		}
 		if (esp_param.wifiwork_mode == 1){
 			user_tcp_client_init();
 		}
@@ -1169,6 +1180,7 @@ void ICACHE_FLASH_ATTR user_esp_platform_check_ip(uint8 reset_flag)
             os_timer_arm(&client_timer, 100, 0);
         }
     }
+#endif
 }
 
 
@@ -1221,28 +1233,27 @@ void ICACHE_FLASH_ATTR sleep_handle(void *timer_arg)
 
 void ICACHE_FLASH_ATTR smartconfig_done(sc_status status, void *pdata)
 {	
+	unsigned int type = 0;
+	char tmp_ssid[64] = { 0 };
+	char tmp_pwd[64] = { 0 };
+	char m_protol_buf[128] = { 0 };
+	struct station_config * sta_conf = pdata;
     switch(status) {
         case SC_STATUS_WAIT:            
             break;
         case SC_STATUS_FIND_CHANNEL:            
             break;
-        case SC_STATUS_GETTING_SSID_PSWD:
-			os_printf("");
-			unsigned int type = 0;
+        case SC_STATUS_GETTING_SSID_PSWD:			
 			type = *(unsigned int *)pdata;
             if (type == SC_TYPE_ESPTOUCH) {
-                os_printf("SC_TYPE:SC_TYPE_ESPTOUCH\n");
+                //ESP_DBG("SC_TYPE:SC_TYPE_ESPTOUCH\n");
             } else {
-                os_printf("SC_TYPE:SC_TYPE_AIRKISS\n");
+                //ESP_DBG("SC_TYPE:SC_TYPE_AIRKISS\n");
             }
             break;
         case SC_STATUS_LINK:
-            os_printf("SC_STATUS_LINK\n");
+            ESP_DBG("SC_STATUS_LINK\n");
 			//解析SSID 和 PWD
-			char tmp_ssid[64] = { 0 };
-			char tmp_pwd[64] = { 0 };
-			char m_protol_buf[128] = { 0 };
-            struct station_config * sta_conf = pdata;
 			os_memcpy(m_protol_buf,sta_conf->password,os_strlen(sta_conf->password));
 			if (os_strncmp(m_protol_buf,HFCONFIGFLAG,os_strlen(HFCONFIGFLAG)) == 0){
 				//解析
@@ -1283,7 +1294,7 @@ void ICACHE_FLASH_ATTR smartconfig_done(sc_status status, void *pdata)
 							p_start += 1;
 							os_strncpy(tmp_pwd,p_start,os_strlen(p_start));
 						}
-						os_printf("workmdoe:%d IP:%d.%d.%d.%d port:%d \n",wifimode_workmdoe,esp_param.ip[0],esp_param.ip[1],esp_param.ip[2],esp_param.ip[3],m_port);
+						ESP_DBG("workmdoe:%d IP:%d.%d.%d.%d port:%d \n",wifimode_workmdoe,esp_param.ip[0],esp_param.ip[1],esp_param.ip[2],esp_param.ip[3],m_port);
 						break;
 					case 3:
 						//<@#&>-3-C0A80172-1ED7-yanfa222
@@ -1312,7 +1323,7 @@ void ICACHE_FLASH_ATTR smartconfig_done(sc_status status, void *pdata)
 					m_conf.bssid_set = 0;
 					os_strncpy(m_conf.ssid,tmp_ssid,os_strlen(tmp_ssid));
 					os_strncpy(m_conf.password,tmp_pwd,os_strlen(tmp_pwd));
-					os_printf("SSID:%s PWD:%s \r\n",m_conf.ssid,m_conf.password);
+					ESP_DBG("SSID:%s PWD:%s \r\n",m_conf.ssid,m_conf.password);
 					wifi_station_set_config(&m_conf);
 					wifi_station_disconnect();
 					wifi_station_connect();
@@ -1344,7 +1355,7 @@ void ICACHE_FLASH_ATTR smartconfig_done(sc_status status, void *pdata)
             if (pdata != NULL) {
                 uint8 phone_ip[4] = {0};
                 os_memcpy(phone_ip, (uint8*)pdata, 4);
-                os_printf("Phone ip: %d.%d.%d.%d\n",phone_ip[0],phone_ip[1],phone_ip[2],phone_ip[3]);
+                ESP_DBG("Phone ip: %d.%d.%d.%d\n",phone_ip[0],phone_ip[1],phone_ip[2],phone_ip[3]);
             }
             smartconfig_stop();
 			user_wifi_led_stop();
@@ -1367,21 +1378,16 @@ void ICACHE_FLASH_ATTR smartconfig_done(sc_status status, void *pdata)
 void ICACHE_FLASH_ATTR user_esp_platform_init(void)
 {
 	system_param_load(ESP_PARAM_START_SEC, 0, &esp_param, sizeof(esp_param));
-	//unsigned char tmp_buf[41] = { 0 };
-	//os_memcpy(tmp_buf,esp_param.devkey,40);
-	//os_printf("esp_param.devkey:%s\r\n",tmp_buf);
 	struct rst_info *rtc_info = system_get_rst_info();
-	//os_printf("reset reason: %x\n", rtc_info->reason);
 	if (rtc_info->reason == REASON_WDT_RST ||
 		rtc_info->reason == REASON_EXCEPTION_RST ||
 		rtc_info->reason == REASON_SOFT_WDT_RST) {
 		if (rtc_info->reason == REASON_EXCEPTION_RST) {
-			os_printf("Fatal exception (%d):\n", rtc_info->exccause);
+			ESP_DBG("Fatal exception (%d):\n", rtc_info->exccause);
 		}
-		os_printf("epc1=0x%08x, epc2=0x%08x, epc3=0x%08x, excvaddr=0x%08x, depc=0x%08x\n",
+		ESP_DBG("epc1=0x%08x, epc2=0x%08x, epc3=0x%08x, excvaddr=0x%08x, depc=0x%08x\n",
 				rtc_info->epc1, rtc_info->epc2, rtc_info->epc3, rtc_info->excvaddr, rtc_info->depc);
 	}
-
 	/***add by tzx for saving ip_info to avoid dhcp_client start****/
     struct dhcp_client_info dhcp_info;
     struct ip_info sta_info;
@@ -1394,21 +1400,27 @@ void ICACHE_FLASH_ATTR user_esp_platform_init(void)
 		sta_info.gw = dhcp_info.gw;
 		sta_info.netmask = dhcp_info.netmask;
 		if ( true != wifi_set_ip_info(STATION_IF,&sta_info)) {
-			os_printf("set default ip wrong\n");
+			ESP_DBG("set default ip wrong\n");
 		}
 	}
     os_memset(&dhcp_info,0,sizeof(struct dhcp_client_info));
     system_rtc_mem_write(64,&dhcp_info,sizeof(struct rst_info));
+	//UART0 PRINT MAC
+	char hwaddr[6] = { 0 };
+	char M_MAC[32] = { 0 };
+	wifi_get_macaddr(STATION_IF,hwaddr);
+	os_sprintf(M_MAC,"\r\n\r\nMAC:%02X%02X%02X%02X%02X%02X\r\n",hwaddr[0],hwaddr[1],hwaddr[2],hwaddr[3],hwaddr[4],hwaddr[5]);
+	uart0_tx_buffer(M_MAC,os_strlen(M_MAC));
 #if AP_CACHE
     wifi_station_ap_number_set(AP_CACHE_NUMBER);
 #endif
 	//恢复出厂设置
 	if (user_is_restore_set() == 0){
-		os_printf("user_is_restore_set\r\n");
+		ESP_DBG("user_is_restore_set\r\n");
 		esp_param.wificonfigflag = -1;
 		system_param_save_with_protect(ESP_PARAM_START_SEC,&esp_param, sizeof(esp_param));
 	}
-	//os_printf("wificonfigflag:%d wifiwork_mode:%d\r\n",esp_param.wificonfigflag,esp_param.wifiwork_mode);
+	ESP_DBG("wificonfigflag:%d wifiwork_mode:%d\r\n",esp_param.wificonfigflag,esp_param.wifiwork_mode);
 	if (esp_param.wificonfigflag != 1){
 		// init
 		wifi_set_opmode(STATION_MODE);

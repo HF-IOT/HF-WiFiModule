@@ -21,8 +21,9 @@
 #include "eagle_soc.h"
 #include "c_types.h"
 
-#define UART_TX_BUFFER_SIZE 4096  //Ring buffer length of tx buffer
-#define UART_RX_BUFFER_SIZE 4096 //Ring buffer length of rx buffer
+#define UART_TX_BUFFER_SIZE 4*1024  //Ring buffer length of tx buffer
+#define UART_RX_BUFFER_SIZE 16*1024 //Ring buffer length of rx buffer
+
 
 #define UART_BUFF_EN  1   //use uart buffer  , FOR UART0
 #define UART_SELFTEST  0  //set 1:enable the loop test demo for uart buffer, FOR UART0

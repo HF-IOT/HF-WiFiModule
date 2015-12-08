@@ -31,12 +31,12 @@ void user_rf_pre_init(void)
  * Returns      : none
 *******************************************************************************/
 void user_init(void)
-{
+{	
 	user_gpio_init();
-	uart_init(115200,115200);	
-	//system_deep_sleep_set_option(1);
-	wifi_set_sleep_type(MODEM_SLEEP_T);
-    //os_printf("\n\nHFWiFiMode version:%s\n",HFWIFIMODE);
+	uart_init(115200,115200);
+	//system_timer_reinit();
+	//wifi_set_sleep_type(MODEM_SLEEP_T);
+    os_printf("\n\nHFWiFiMode version:%s\n",HFWIFIMODE);
 	wifi_station_set_auto_connect(1);
     user_esp_platform_init();
 }

@@ -19,7 +19,7 @@
 #include "user_json.h"
 #include "user_devicefind.h"
 
-#define M_MACSTR "%02X-%02X-%02X-%02X-%02X-%02X"
+#define M_MACSTR "%02X%02X%02X%02X%02X%02X"
 const char * device_find_request = "HF-IOT-DEVICE";
 #if PLUG_DEVICE
 const char * device_find_response_ok =  HFWIFIMODE ",%d," IPSTR "," M_MACSTR "\r\n";
@@ -105,7 +105,7 @@ void ICACHE_FLASH_ATTR user_devicefind_init(void)
 {
     ptrespconn.type = ESPCONN_UDP;
     ptrespconn.proto.udp = (esp_udp *)os_zalloc(sizeof(esp_udp));
-    ptrespconn.proto.udp->local_port = 1025;
+    ptrespconn.proto.udp->local_port = UDP_BOADCASTPORT;
     espconn_regist_recvcb(&ptrespconn, user_devicefind_recv);
     espconn_create(&ptrespconn);
 }

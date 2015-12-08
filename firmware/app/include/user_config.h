@@ -20,11 +20,13 @@
 //#define CLIENT_SSL_ENABLE
 //#define UPGRADE_SSL_ENABLE
 
-#define USE_DNS
+//#define USE_DNS
 
 #ifdef USE_DNS
 #define ESP_DOMAIN      "iot.espressif.cn"
 #endif
+
+#define UDP_BOADCASTPORT 7020
 
 //#define SOFTAP_ENCRYPT
 
@@ -42,13 +44,13 @@
 #endif
 #endif
 
-#if LIGHT_DEVICE
+
 #define USE_US_TIMER
-#endif
+
 
 #if PLUG_DEVICE || LIGHT_DEVICE
 #define BEACON_TIMEOUT  150000000
-#define BEACON_TIME     120000
+#define BEACON_TIME     300000
 #endif
 
 #define AP_CACHE           1
